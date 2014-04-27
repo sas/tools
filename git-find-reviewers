@@ -1,0 +1,45 @@
+#!/bin/sh
+
+set -eu
+
+num_reviewers="3"
+fast="false"
+
+usage_die()
+{
+  (
+    echo "usage: $0 [OPTION]... FILE..."
+    echo " with: --help             Display this help"
+    echo "       --num-reviewers N  Number of reviewers to display for each file"
+    echo "       --fast             Do a faster (but less precise) lookup"
+    echo "       --                 Stop processing options"
+    exit 1
+  )>&2
+}
+
+while [ $# -ge 1 ]; do
+  case "$1" in
+    "--help")           usage_die                 ;;
+    "--num-reviewers")  shift; num_reviewers="$1" ;;
+    "--fast")           fast=true                 ;;
+    "--")               shift; break              ;;
+    *)                  break                     ;;
+  esac
+
+  shift
+done
+
+if [ $# -eq 0 ]; then
+  usage_die
+fi
+
+if [ "$fast" = "true" ]; then
+  blame_options=""
+else
+  blame_options="-CCCM"
+fi
+
+for file in "$@"; do
+  echo "reviewers for file $file:"
+  git blame -fCCCM --line-porcelain -- "$file" | grep author-mail | sed -e 's/^author-mail <\(.*\)>$/\1/' | sort | uniq -c | sort -rn | head -n "$num_reviewers"
+done

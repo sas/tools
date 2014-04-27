@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -ue
+
+tmpbin=`mktemp`
+
+for t in "$@"; do
+	gcc -x c - -Wall -Wextra -o $tmpbin <<-EOF
+	#include <stdio.h>
+	#include <stdint.h>
+	
+	int main(void)
+	{
+	  printf("%lu\n", sizeof($t));
+	  return 0;
+	}
+	EOF
+
+        echo "$t: $($tmpbin)"
+done
+
+rm $tmpbin
